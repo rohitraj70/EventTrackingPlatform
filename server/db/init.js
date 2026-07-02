@@ -1,0 +1,156 @@
+const pool = require("./connection");
+
+const initDatabase = async () => {
+  try {
+    console.log("Initializing database...");
+
+    // Create tables
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS venues (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        address VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS events (
+        id SERIAL PRIMARY KEY,
+        venue_id INTEGER NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        starts_at TIMESTAMP,
+        status VARCHAR(50) DEFAULT 'upcoming',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sections (
+        id SERIAL PRIMARY KEY,
+        venue_id INTEGER NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        price_cents INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS seats (
+        id SERIAL PRIMARY KEY,
+        section_id INTEGER NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
+        row VARCHAR(10) NOT NULL,
+        number INTEGER NOT NULL,
+        status VARCHAR(50) DEFAULT 'available',
+        held_until TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(section_id, row, number)
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bookings (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+        status VARCHAR(50) DEFAULT 'confirmed',
+        total_cents INTEGER,
+        idempotency_key VARCHAR(255) UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS booking_seats (
+        id SERIAL PRIMARY KEY,
+        booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+        seat_id INTEGER NOT NULL REFERENCES seats(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(booking_id, seat_id)
+      );
+    `);
+
+    console.log("✅ Database tables created successfully!");
+
+    // Insert sample data if tables are empty
+    const venuesCheck = await pool.query("SELECT COUNT(*) FROM venues");
+    
+    if (parseInt(venuesCheck.rows[0].count) === 0) {
+      console.log("Inserting sample data...");
+
+      // Insert venue
+      const venueRes = await pool.query(
+        "INSERT INTO venues (name, address) VALUES ($1, $2) RETURNING id",
+        ["Grand Theater", "123 Main St, City"]
+      );
+      const venueId = venueRes.rows[0].id;
+
+      // Insert event
+      const eventRes = await pool.query(
+        "INSERT INTO events (venue_id, title, description, starts_at) VALUES ($1, $2, $3, $4) RETURNING id",
+        [
+          venueId,
+          "Live Concert 2024",
+          "Amazing live music performance",
+          new Date("2024-07-15T19:00:00Z"),
+        ]
+      );
+      const eventId = eventRes.rows[0].id;
+
+      // Insert sections
+      const floorRes = await pool.query(
+        "INSERT INTO sections (venue_id, name, price_cents) VALUES ($1, $2, $3) RETURNING id",
+        [venueId, "Floor", 5000]
+      );
+      const floorSectionId = floorRes.rows[0].id;
+
+      const balconyRes = await pool.query(
+        "INSERT INTO sections (venue_id, name, price_cents) VALUES ($1, $2, $3) RETURNING id",
+        [venueId, "Balcony", 3000]
+      );
+      const balconySectionId = balconyRes.rows[0].id;
+
+      // Insert seats for Floor section
+      for (let row = 0; row < 3; row++) {
+        const rowLetter = String.fromCharCode(65 + row); // A, B, C
+        for (let num = 1; num <= 10; num++) {
+          await pool.query(
+            "INSERT INTO seats (section_id, row, number, status) VALUES ($1, $2, $3, $4)",
+            [floorSectionId, rowLetter, num, "available"]
+          );
+        }
+      }
+
+      // Insert seats for Balcony section
+      for (let row = 0; row < 2; row++) {
+        const rowLetter = String.fromCharCode(65 + row); // A, B
+        for (let num = 1; num <= 8; num++) {
+          await pool.query(
+            "INSERT INTO seats (section_id, row, number, status) VALUES ($1, $2, $3, $4)",
+            [balconySectionId, rowLetter, num, "available"]
+          );
+        }
+      }
+
+      console.log("✅ Sample data inserted successfully!");
+    }
+
+    console.log("✅ Database initialized!");
+    process.exit(0);
+  } catch (error) {
+    console.error("❌ Database initialization error:", error);
+    process.exit(1);
+  }
+};
+
+initDatabase();

@@ -1,0 +1,135 @@
+.events-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px;
+  min-height: 100vh;
+}
+
+.events-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.events-header h1 {
+  font-size: 36px;
+  color: var(--text-h);
+  margin: 0 0 10px 0;
+  font-weight: 700;
+}
+
+.events-header p {
+  font-size: 16px;
+  color: var(--text);
+  margin: 0;
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  text-align: center;
+}
+
+.loading-spinner h2 {
+  font-size: 20px;
+  color: var(--text);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.error-message {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: 8px;
+  padding: 40px 30px;
+  text-align: center;
+  max-width: 500px;
+  margin: 100px auto;
+}
+
+.error-message h2 {
+  color: #c33;
+  font-size: 24px;
+  margin-bottom: 15px;
+}
+
+.error-message p {
+  color: #666;
+  font-size: 16px;
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
+
+.error-message button {
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.error-message button:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.no-events {
+  background-color: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 60px 40px;
+  text-align: center;
+  max-width: 600px;
+  margin: 100px auto;
+}
+
+.no-events h2 {
+  font-size: 24px;
+  color: var(--text-h);
+  margin-bottom: 15px;
+}
+
+.no-events p {
+  font-size: 16px;
+  color: var(--text);
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .events-container {
+    padding: 20px 15px;
+  }
+
+  .events-header h1 {
+    font-size: 28px;
+  }
+
+  .events-header p {
+    font-size: 14px;
+  }
+
+  .events-grid {
+    grid-template-columns: 1fr;
+  }
+}
