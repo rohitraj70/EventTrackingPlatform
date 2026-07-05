@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const PORT = process.env.PORT || 5000;
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder");
@@ -491,6 +492,6 @@ app.post("/payments/confirm", verifyToken, async (req, res) => {
   }
 });
 
-app.listen(5000, () => {
-  console.log(`Server running on http://localhost:5000`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
