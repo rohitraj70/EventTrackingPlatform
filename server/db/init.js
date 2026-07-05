@@ -1,10 +1,9 @@
 const pool = require("./connection");
 
-const initDatabase = async () => {
+async function initDatabase() {
   try {
     console.log("Initializing database...");
 
-    // Create tables
     await pool.query(`
       CREATE TABLE IF NOT EXISTS venues (
         id SERIAL PRIMARY KEY,
@@ -80,77 +79,98 @@ const initDatabase = async () => {
       );
     `);
 
-    console.log("✅ Database tables created successfully!");
+    console.log("Tables created.");
 
-    // Insert sample data if tables are empty
-    const venuesCheck = await pool.query("SELECT COUNT(*) FROM venues");
-    
-    if (parseInt(venuesCheck.rows[0].count) === 0) {
+    const venues = await pool.query("SELECT COUNT(*) FROM venues");
+
+    if (parseInt(venues.rows[0].count) === 0) {
+
       console.log("Inserting sample data...");
 
-      // Insert venue
-      const venueRes = await pool.query(
-        "INSERT INTO venues (name, address) VALUES ($1, $2) RETURNING id",
-        ["Grand Theater", "123 Main St, City"]
+      const venue = await pool.query(
+        `INSERT INTO venues(name,address)
+        VALUES($1,$2)
+        RETURNING id`,
+        ["Grand Theater", "123 Main Street"]
       );
-      const venueId = venueRes.rows[0].id;
 
-      // Insert event
-      const eventRes = await pool.query(
-        "INSERT INTO events (venue_id, title, description, starts_at) VALUES ($1, $2, $3, $4) RETURNING id",
+      const venueId = venue.rows[0].id;
+
+      const event = await pool.query(
+        `INSERT INTO events
+        (venue_id,title,description,starts_at)
+        VALUES($1,$2,$3,$4)
+        RETURNING id`,
         [
           venueId,
-          "Live Concert 2024",
-          "Amazing live music performance",
-          new Date("2024-07-15T19:00:00Z"),
+          "Live Concert",
+          "Amazing Live Concert",
+          new Date()
         ]
       );
-      const eventId = eventRes.rows[0].id;
 
-      // Insert sections
-      const floorRes = await pool.query(
-        "INSERT INTO sections (venue_id, name, price_cents) VALUES ($1, $2, $3) RETURNING id",
+      const floor = await pool.query(
+        `INSERT INTO sections
+        (venue_id,name,price_cents)
+        VALUES($1,$2,$3)
+        RETURNING id`,
         [venueId, "Floor", 5000]
       );
-      const floorSectionId = floorRes.rows[0].id;
 
-      const balconyRes = await pool.query(
-        "INSERT INTO sections (venue_id, name, price_cents) VALUES ($1, $2, $3) RETURNING id",
+      const balcony = await pool.query(
+        `INSERT INTO sections
+        (venue_id,name,price_cents)
+        VALUES($1,$2,$3)
+        RETURNING id`,
         [venueId, "Balcony", 3000]
       );
-      const balconySectionId = balconyRes.rows[0].id;
 
-      // Insert seats for Floor section
-      for (let row = 0; row < 3; row++) {
-        const rowLetter = String.fromCharCode(65 + row); // A, B, C
-        for (let num = 1; num <= 10; num++) {
+      const floorId = floor.rows[0].id;
+      const balconyId = balcony.rows[0].id;
+
+      for (let r = 0; r < 3; r++) {
+
+        const row = String.fromCharCode(65 + r);
+
+        for (let i = 1; i <= 10; i++) {
+
           await pool.query(
-            "INSERT INTO seats (section_id, row, number, status) VALUES ($1, $2, $3, $4)",
-            [floorSectionId, rowLetter, num, "available"]
+            `INSERT INTO seats(section_id,row,number,status)
+             VALUES($1,$2,$3,'available')`,
+            [floorId, row, i]
           );
+
         }
+
       }
 
-      // Insert seats for Balcony section
-      for (let row = 0; row < 2; row++) {
-        const rowLetter = String.fromCharCode(65 + row); // A, B
-        for (let num = 1; num <= 8; num++) {
+      for (let r = 0; r < 2; r++) {
+
+        const row = String.fromCharCode(65 + r);
+
+        for (let i = 1; i <= 8; i++) {
+
           await pool.query(
-            "INSERT INTO seats (section_id, row, number, status) VALUES ($1, $2, $3, $4)",
-            [balconySectionId, rowLetter, num, "available"]
+            `INSERT INTO seats(section_id,row,number,status)
+             VALUES($1,$2,$3,'available')`,
+            [balconyId, row, i]
           );
+
         }
+
       }
 
-      console.log("✅ Sample data inserted successfully!");
+      console.log("Sample data inserted.");
     }
 
-    console.log("✅ Database initialized!");
-    process.exit(0);
-  } catch (error) {
-    console.error("❌ Database initialization error:", error);
-    process.exit(1);
-  }
-};
+    console.log("Database ready.");
 
-initDatabase();
+  } catch (err) {
+
+    console.error(err);
+    throw err;
+
+  }
+}
+
+module.exports = initDatabase;
